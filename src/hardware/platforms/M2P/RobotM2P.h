@@ -29,8 +29,7 @@ typedef Eigen::VectorXd VX; //!< Generic (dynamic) size version required for com
  */
 class RobotM2P: public Robot {
    private:
-    VM2 qCalibration = {0, 0.};  //!< Calibration configuration: posture in which the robot is when using the calibration procedure
-    std::vector<double> iPeakDrives = {42.0, 42.0, 42.0};     
+    VM2 qCalibration = {0, 0.};  //!< Calibration configuration: posture in which the robot is when using the calibration procedure  
     
     bool calibrated;
     double maxEndEffVel; //!< Maximal end-effector allowable velocity. Used in checkSafety when robot is calibrated.
@@ -73,6 +72,7 @@ class RobotM2P: public Robot {
      * \brief set the profile of the displacement of the end effector
     */
     std::vector<double> iPeakDrives;
+    short int flag;
 
     /**
        * \brief Initialises all joints to position control mode.

@@ -10,6 +10,7 @@ RobotM2P::RobotM2P(string robot_name, string yaml_config_file) :  Robot(robot_na
 
     // Load default parameters
     iPeakDrives = {42.0, 42.0, 42.0};
+    flag = 0;
 
     //Check if YAML file exists and contain robot parameters
     initialiseFromYAML(yaml_config_file);

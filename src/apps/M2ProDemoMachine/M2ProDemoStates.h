@@ -221,12 +221,19 @@ class M2ProStiffnessEst: public M2TimedState {
     void exitCode(void);
 
    private:
-    static const unsigned int TrajNbPts=4;
+    // parameters for the reaching task
+    VM2 startPoint;
+    VM2 endPoint;
+    float xThreshold;
+    
+    // parameters for the dispalcement trajectory
+    VM2 Xi, Xf;
+    float displacement = 0.1;
+    static const unsigned int TrajNbPts=2;
     unsigned int TrajPtIdx=0;
     double startTime;
-    VM2 TrajPt[TrajNbPts]={VM2(0, 0), VM2(0.1, 0.1), VM2(0, 0), VM2(0.1, 0.1)};
-    double TrajTime[TrajNbPts]={2, 2, 2, 2};
-    VM2 Xi, Xf;
+    VM2 TrajPt[TrajNbPts]={VM2(0.1, 0.1), VM2(0.1, 0.1)};
+    double TrajTime[TrajNbPts]={2, 2};
     double T;
     float k_i=1.; //Integral gain
 };

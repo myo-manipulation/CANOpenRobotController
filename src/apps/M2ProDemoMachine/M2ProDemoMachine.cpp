@@ -63,6 +63,7 @@ void M2ProDemoMachine::init() {
         logHelper.add(robot()->getEndEffVelocity(), "Velocity");
         logHelper.add(robot()->getEndEffForce(), "MotorTorque");
         logHelper.add(robot()->getInteractionForce(), "Force");
+        logHelper.add(robot()->flag, "task phase marker");
         logHelper.startLogger();
         // UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
         UIserver = std::make_shared<FLNLHelper>(*robot(), "127.0.0.1");

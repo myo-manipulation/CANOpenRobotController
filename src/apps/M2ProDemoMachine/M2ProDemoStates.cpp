@@ -251,31 +251,111 @@ void M2DemoMinJerkPosition::exitCode(void) {
 }
 
 void M2ProStiffnessEst::entryCode(void) {
-    //Setup velocity control for position over velocity loop
-    robot->iPeakDrives = {0,0,0};
+    //generate the displacement trajectory
+    VM2 startPoint = {1,0};
+    VM2 endPoint = {2,0};
+    
+    // generate a random interference position, defined by a position thresould of x axis
+    srand(time(NULL));
+    int randomNum = rand() % 100; // generate a random number between 0 and 99
+    xThreshold = 0.01*randomNum*(endPoint(0)-startPoint(0))+startPoint(0); // generate a random position threshold
+
+    //initialise the robot to torque control mode
+    robot->flag=0;
     robot->initTorqueControl();
 }
 void M2ProStiffnessEst::duringCode(void) {
+    // get current position
+    VM2 currPosition =robot->getEndEffPosition();
 
-    //Apply corresponding force
-    robot->setEndEffForceWithCompensation(VM2::Zero(), true);
+    //judge if getting ready at the start position, if arrived, change flag to 1
+    float distance = sqrt(pow(currPosition(0)-startPoint(0),2)+pow(currPosition(1)-startPoint(1),2));
+    if ( distance <= 0.01 && robot->flag==0) {
+        robot->flag=1;
+    }
+    
+    //judge if arriving at the interference position, if arrived, change to velocity control, change flag to 2
+    if (currPosition(0) > xThreshold && robot->flag==1) {
+        robot->flag=2;
+        robot->initVelocityControl();
+        robot->setEndEffVelocity(VM2::Zero());
+    
+        //calculate the trajectory path
+        displacement = 0.1;
+        TrajPt[TrajNbPts]={VM2(Xi(0), Xi(1)+displacement), VM2(Xi(0), Xi(1))};
 
-    if(iterations()%100==1) {
-        robot->printStatus();
+        //Initialise to first target point
+        TrajPtIdx=0;
+        startTime=running();
+        Xf=TrajPt[TrajPtIdx];
+        Xi=robot->getEndEffPosition();
+        T=TrajTime[TrajPtIdx];
+        k_i=1.;
+    }
+    // after completing the interference, change to torque control, change flag to 3
+
+    //judge if arriving at the end position, if arrived, change flag to 4
+    distance = sqrt(pow(currPosition(0)-endPoint(0),2)+pow(currPosition(1)-endPoint(1),2));
+    if ( distance <= 0.01 && robot->flag==1) {
+        robot->flag=4;
     }
 
-    //get current position
+    //
+    switch (robot->flag)
+    {
+    case 0: // transparent mode
+        robot->setEndEffForceWithCompensation(VM2::Zero(), true);
+        if(iterations()%100==1) {
+            std::cout << "Please go to the starting position" << std::endl;
+        }
+    case 1: // transparent mode
+        robot->setEndEffForceWithCompensation(VM2::Zero(), true);
+        if(iterations()%100==1) {
+            robot->printStatus();
+        }
+        break;
+    case 2: //minimum jerk trajectory to apply a displacement
+        VM2 Xd, dXd;
+        //Compute current desired interpolated point
+        double status=JerkIt(Xi, Xf, T, running()-startTime, Xd, dXd);
+        //Apply position control
+        robot->setEndEffVelocity(dXd+k_i*(Xd-robot->getEndEffPosition()));
 
-    //judge if arriving at the interference position, if arrived, change to velocity control, send a flag command to UI
-
-    //minimum jerk trajectory to apply a displacement
-
-    //finish the trajectory, change to force control, send a flag command to UI
-
-    //judge if arriving at the target position, if arrived, next state and send a flag command to UI
+        //Have we reached a point?
+        if(status>=1.) {
+            //Go to next point
+            TrajPtIdx++;
+            //Have we reached the end of the trajectory?
+            if(TrajPtIdx>=TrajNbPts){
+                robot->flag=3;
+                robot->initTorqueControl();
+            }
+            //From where we are
+            Xi=robot->getEndEffPosition();
+            //To next point
+            Xf=TrajPt[TrajPtIdx];
+            T=TrajTime[TrajPtIdx];
+            startTime=running();
+        }
+        break;
+    case 3: // transparent mode
+        robot->setEndEffForceWithCompensation(VM2::Zero(), true);
+        if(iterations()%100==1) {
+            robot->printStatus();
+        }
+    
+    case 4: // arrive at the target position
+        robot->setEndEffForceWithCompensation(VM2::Zero(), true);
+        if(iterations()%100==1) {
+            std::cout << "Arriving !" << std::endl;
+        }
+    default:
+        break;
+    }
 
 }
 void M2ProStiffnessEst::exitCode(void) {
+    robot->flag=0;
     robot->setEndEffForceWithCompensation(VM2::Zero(), true);
 }
 
