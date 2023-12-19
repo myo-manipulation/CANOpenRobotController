@@ -71,7 +71,10 @@ class RobotM2P: public Robot {
     /**
      * \brief set the profile of the displacement of the end effector
     */
-    std::vector<double> iPeakDrives;
+    std::vector<double> startPoint;
+    std::vector<double> endPoint;
+    double displacement;
+    double dTime;
     short int flag;
 
     /**

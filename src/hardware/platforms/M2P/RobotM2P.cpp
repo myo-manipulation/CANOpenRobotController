@@ -9,8 +9,11 @@ RobotM2P::RobotM2P(string robot_name, string yaml_config_file) :  Robot(robot_na
                                                                 maxEndEffForce(80) {
 
     // Load default parameters
-    iPeakDrives = {42.0, 42.0, 42.0};
     flag = 0;
+    startPoint = {0, 0};;
+    endPoint = {0, 0};
+    displacement = 0;
+    dTime = 0;
 
     //Check if YAML file exists and contain robot parameters
     initialiseFromYAML(yaml_config_file);
@@ -54,16 +57,10 @@ bool RobotM2P::loadParametersFromYAML(YAML::Node params) {
     YAML::Node params_r=params[robotName]; //Specific node corresponding to the robot
 
     //Load parameters
-    fillParamVectorFromYaml(params_r["iPeakDrives"], iPeakDrives);
-
-    // Load other parameters
-    // fillParamVectorFromYaml(params_r["iPeakDrives"], iPeakDrives);
-
-    std::cout << "Value of iPeakDrives: ";
-    for (const auto& value : iPeakDrives) {
-        std::cout << value << " ";
-    }
-    std::cout << std::endl;
+    fillParamVectorFromYaml(params_r["startPoint"], startPoint);
+    fillParamVectorFromYaml(params_r["endPoint"], endPoint);
+    displacement = params_r["displacement"].as<double>();
+    dTime = params_r["dTime"].as<double>();
 
     spdlog::info("Parameters loaded from YAML file");
     return true;

@@ -252,13 +252,15 @@ void M2DemoMinJerkPosition::exitCode(void) {
 
 void M2ProStiffnessEst::entryCode(void) {
     //generate the displacement trajectory
-    VM2 startPoint = {1,0};
-    VM2 endPoint = {2,0};
+    startPoint = robot->startPoint;
+    endPoint = robot->endPoint;
+    displacement = robot->displacement;
+    dTime = robot->dTime;
     
     // generate a random interference position, defined by a position thresould of x axis
     srand(time(NULL));
     int randomNum = rand() % 100; // generate a random number between 0 and 99
-    xThreshold = 0.01*randomNum*(endPoint(0)-startPoint(0))+startPoint(0); // generate a random position threshold
+    xThreshold = 0.01*randomNum*(endPoint[0]-startPoint[0])+startPoint[0]; // generate a random position threshold
 
     //initialise the robot to torque control mode
     robot->flag=0;
@@ -269,7 +271,7 @@ void M2ProStiffnessEst::duringCode(void) {
     VM2 currPosition =robot->getEndEffPosition();
 
     //judge if getting ready at the start position, if arrived, change flag to 1
-    float distance = sqrt(pow(currPosition(0)-startPoint(0),2)+pow(currPosition(1)-startPoint(1),2));
+    float distance = sqrt(pow(currPosition(0)-startPoint[0],2)+pow(currPosition(1)-startPoint[1],2));
     if ( distance <= 0.01 && robot->flag==0) {
         robot->flag=1;
     }
@@ -280,9 +282,11 @@ void M2ProStiffnessEst::duringCode(void) {
         robot->initVelocityControl();
         robot->setEndEffVelocity(VM2::Zero());
     
-        //calculate the trajectory path
-        displacement = 0.1;
-        TrajPt[TrajNbPts]={VM2(Xi(0), Xi(1)+displacement), VM2(Xi(0), Xi(1))};
+        TrajPt[0] = VM2(Xi(0), Xi(1)+displacement); // Assign values to the elements of TrajPt
+        TrajPt[1] = VM2(Xi(0), Xi(1));
+
+        TrajTime[0] = dTime; // Assign values to the elements of TrajTime
+        TrajTime[1] = dTime;
 
         //Initialise to first target point
         TrajPtIdx=0;
@@ -295,12 +299,14 @@ void M2ProStiffnessEst::duringCode(void) {
     // after completing the interference, change to torque control, change flag to 3
 
     //judge if arriving at the end position, if arrived, change flag to 4
-    distance = sqrt(pow(currPosition(0)-endPoint(0),2)+pow(currPosition(1)-endPoint(1),2));
+    distance = sqrt(pow(currPosition(0)-endPoint[0],2)+pow(currPosition(1)-endPoint[1],2));
     if ( distance <= 0.01 && robot->flag==1) {
         robot->flag=4;
     }
 
-    //
+    // conduct the experiment protocol
+    VM2 Xd, dXd;
+    double status;
     switch (robot->flag)
     {
     case 0: // transparent mode
@@ -308,6 +314,7 @@ void M2ProStiffnessEst::duringCode(void) {
         if(iterations()%100==1) {
             std::cout << "Please go to the starting position" << std::endl;
         }
+        break;
     case 1: // transparent mode
         robot->setEndEffForceWithCompensation(VM2::Zero(), true);
         if(iterations()%100==1) {
@@ -315,9 +322,8 @@ void M2ProStiffnessEst::duringCode(void) {
         }
         break;
     case 2: //minimum jerk trajectory to apply a displacement
-        VM2 Xd, dXd;
         //Compute current desired interpolated point
-        double status=JerkIt(Xi, Xf, T, running()-startTime, Xd, dXd);
+        status=JerkIt(Xi, Xf, T, running()-startTime, Xd, dXd);
         //Apply position control
         robot->setEndEffVelocity(dXd+k_i*(Xd-robot->getEndEffPosition()));
 
@@ -343,12 +349,13 @@ void M2ProStiffnessEst::duringCode(void) {
         if(iterations()%100==1) {
             robot->printStatus();
         }
-    
+        break;
     case 4: // arrive at the target position
         robot->setEndEffForceWithCompensation(VM2::Zero(), true);
         if(iterations()%100==1) {
             std::cout << "Arriving !" << std::endl;
         }
+        break;
     default:
         break;
     }
