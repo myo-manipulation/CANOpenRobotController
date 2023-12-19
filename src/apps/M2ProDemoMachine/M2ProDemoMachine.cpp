@@ -35,19 +35,14 @@ M2ProDemoMachine::M2ProDemoMachine() {
     setRobot(std::make_unique<RobotM2P>("M2_MELB", "m2p_params.yaml"));
 
     //Create state instances and add to the State Machine
-    addState("TestState", std::make_shared<M2DemoState>(robot()));
     addState("CalibState", std::make_shared<M2CalibState>(robot()));
-    addState("StandbyState", std::make_shared<M2Transparent>(robot()));
-    addState("EndEffDemoState", std::make_shared<M2EndEffDemo>(robot()));
-    addState("PathState", std::make_shared<M2DemoPathState>(robot()));
-    addState("MinJerkState", std::make_shared<M2DemoMinJerkPosition>(robot()));
+    addState("WaitState", std::make_shared<M2Transparent>(robot()));
+    addState("StiffnessEst", std::make_shared<M2ProStiffnessEst>(robot()));
 
     //Define transitions between states
-    addTransition("CalibState", &endCalib, "StandbyState");
-    addTransitionFromLast(&goToNextState, "MinJerkState");
-    addTransitionFromLast(&goToNextState, "EndEffDemoState");
-    addTransitionFromLast(&goToNextState, "PathState");
-    addTransitionFromLast(&goToNextState, "StandbyState");
+    addTransition("CalibState", &endCalib, "WaitState");
+    addTransitionFromLast(&goToNextState, "StiffnessEst");
+    addTransitionFromLast(&goToNextState, "WaitState");
 
     //Initialize the state machine with first state of the designed state machine
     setInitState("CalibState");
@@ -66,8 +61,8 @@ void M2ProDemoMachine::init() {
         logHelper.add(runningTime(), "Time (s)");
         logHelper.add(robot()->getEndEffPosition(), "Position");
         logHelper.add(robot()->getEndEffVelocity(), "Velocity");
-        logHelper.add(robot()->getEndEffForce(), "Force");
-        logHelper.add(robot()->getInteractionForce(), "Torque");
+        logHelper.add(robot()->getEndEffForce(), "MotorTorque");
+        logHelper.add(robot()->getInteractionForce(), "Force");
         logHelper.startLogger();
         // UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
         UIserver = std::make_shared<FLNLHelper>(*robot(), "127.0.0.1");

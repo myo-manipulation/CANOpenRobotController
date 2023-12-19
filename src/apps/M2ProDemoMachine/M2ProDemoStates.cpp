@@ -250,5 +250,32 @@ void M2DemoMinJerkPosition::exitCode(void) {
     robot->setJointVelocity(VM2::Zero());
 }
 
+void M2ProStiffnessEst::entryCode(void) {
+    //Setup velocity control for position over velocity loop
+    robot->iPeakDrives = {0,0,0};
+    robot->initTorqueControl();
+}
+void M2ProStiffnessEst::duringCode(void) {
 
+    //Apply corresponding force
+    robot->setEndEffForceWithCompensation(VM2::Zero(), true);
+
+    if(iterations()%100==1) {
+        robot->printStatus();
+    }
+
+    //get current position
+
+    //judge if arriving at the interference position, if arrived, change to velocity control, send a flag command to UI
+
+    //minimum jerk trajectory to apply a displacement
+
+    //finish the trajectory, change to force control, send a flag command to UI
+
+    //judge if arriving at the target position, if arrived, next state and send a flag command to UI
+
+}
+void M2ProStiffnessEst::exitCode(void) {
+    robot->setEndEffForceWithCompensation(VM2::Zero(), true);
+}
 

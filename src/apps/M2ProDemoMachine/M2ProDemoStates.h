@@ -81,7 +81,7 @@ class M2DemoState : public M2TimedState {
 
 
 /**
- * \brief Position calibration of M2. Go to the bottom left stops of robot at constant torque for absolute position calibration.
+ * \brief Position calibration of M2. Go to the bottom right stops of robot at constant torque for absolute position calibration.
  *
  */
 class M2CalibState : public M2TimedState {
@@ -206,5 +206,29 @@ class M2DemoMinJerkPosition: public M2TimedState {
     float k_i=1.; //Integral gain
 };
 
+
+/**
+ * \brief Exert a disturbance on the end-effector and estimate the stiffness of the hand.
+ *
+ */
+class M2ProStiffnessEst: public M2TimedState {
+
+   public:
+    M2ProStiffnessEst(RobotM2P *M2, const char *name = "M2 Pro hand stiffness estimation"):M2TimedState(M2, name){};
+
+    void entryCode(void);
+    void duringCode(void);
+    void exitCode(void);
+
+   private:
+    static const unsigned int TrajNbPts=4;
+    unsigned int TrajPtIdx=0;
+    double startTime;
+    VM2 TrajPt[TrajNbPts]={VM2(0, 0), VM2(0.1, 0.1), VM2(0, 0), VM2(0.1, 0.1)};
+    double TrajTime[TrajNbPts]={2, 2, 2, 2};
+    VM2 Xi, Xf;
+    double T;
+    float k_i=1.; //Integral gain
+};
 
 #endif

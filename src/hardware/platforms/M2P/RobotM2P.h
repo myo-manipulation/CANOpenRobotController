@@ -70,6 +70,11 @@ class RobotM2P: public Robot {
     Joystick *joystick;
 
     /**
+     * \brief set the profile of the displacement of the end effector
+    */
+    std::vector<double> iPeakDrives;
+
+    /**
        * \brief Initialises all joints to position control mode.
        *
        * \return true If all joints are successfully configured
