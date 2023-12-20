@@ -32,8 +32,8 @@ RobotM2P::RobotM2P(string robot_name, string yaml_config_file) :  Robot(robot_na
     joints.push_back(new JointM2P(0, ratio_x, 0, 0.56, 1, -vel_max_x, vel_max_x, -tau_max_x, tau_max_x, new KincoDrive(1), "x"));
     joints.push_back(new JointM2P(1, ratio_y, 0, 0.40, 1, -vel_max_y, vel_max_y, -tau_max_y, tau_max_y, new KincoDrive(2), "y"));
 
-    forceSensors.push_back(new FourierForceSensor(3, 1.0)); //TODO: to calibrate!
-    forceSensors.push_back(new FourierForceSensor(4, 1.0));
+    forceSensors.push_back(new FourierForceSensor(3, 10.0/10.0)); //calibrated by a weight set to 1.0
+    forceSensors.push_back(new FourierForceSensor(4, 10.0/14.0)); //calibrated by a weight set to 1.0
     for(unsigned int i=0; i<forceSensors.size(); i++)
         inputs.push_back(forceSensors[i]);
 
