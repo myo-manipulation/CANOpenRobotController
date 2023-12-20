@@ -1,5 +1,5 @@
 M2Pro:
-  startPoint: [0.1, 0.2] # [m]
-  endPoint: [0.4, 0.2] # [m]
+  startPoint: [0.1, 0.1] # [m]
+  endPoint: [0.5, 0.1] # [m]
   displacement: 0.1 # [m]
-  dTime: 0.1 # [s]
+  dTime: 1 # [s]

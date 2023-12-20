@@ -234,7 +234,7 @@ class M2ProStiffnessEst: public M2TimedState {
     unsigned int TrajPtIdx=0;
     double startTime;
     VM2 TrajPt[TrajNbPts]={VM2(0., 0.), VM2(0., 0.)};
-    double TrajTime[TrajNbPts]={1, 1};
+    double TrajTime[TrajNbPts]={2, 2};
     double T;
     float k_i=1.; //Integral gain
 };
