@@ -66,7 +66,14 @@ void M2ProDemoMachine::init() {
         logHelper.add(robot()->flag, "task phase marker");
         logHelper.startLogger();
         // UIserver = std::make_shared<FLNLHelper>(*robot(), "192.168.7.2");
-        UIserver = std::make_shared<FLNLHelper>(*robot(), "127.0.0.1");
+        UIserver = std::make_shared<FLNLHelper>("127.0.0.1");
+
+        UIserver->registerState(runningTime());
+        UIserver->registerState(robot()->getEndEffPosition());
+        UIserver->registerState(robot()->getEndEffVelocity());
+        UIserver->registerState(robot()->getEndEffForce());
+        UIserver->registerState(robot()->getInteractionForce());
+        UIserver->registerState(robot()->flag);
     }
     else {
         spdlog::critical("Failed robot initialisation. Exiting...");
