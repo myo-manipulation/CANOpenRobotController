@@ -75,6 +75,7 @@ class RobotM2P: public Robot {
     std::vector<double> endPoint;
     double displacement;
     double dTime;
+    std::vector<double> maxVel;
     short int flag;
 
     /**

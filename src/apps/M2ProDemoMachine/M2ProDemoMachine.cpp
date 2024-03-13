@@ -38,10 +38,12 @@ M2ProDemoMachine::M2ProDemoMachine() {
     addState("CalibState", std::make_shared<M2CalibState>(robot()));
     addState("WaitState", std::make_shared<M2Transparent>(robot()));
     addState("StiffnessEst", std::make_shared<M2ProStiffnessEst>(robot()));
+    addState("TraProfile", std::make_shared<M2ProTrapezoidalProfile>(robot()));
 
     //Define transitions between states
     addTransition("CalibState", &endCalib, "WaitState");
     addTransitionFromLast(&goToNextState, "StiffnessEst");
+    addTransitionFromLast(&goToNextState, "TraProfile");
     addTransitionFromLast(&goToNextState, "WaitState");
 
     //Initialize the state machine with first state of the designed state machine

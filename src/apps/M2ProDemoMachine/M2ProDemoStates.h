@@ -239,4 +239,29 @@ class M2ProStiffnessEst: public M2TimedState {
     float k_i=1.; //Integral gain
 };
 
+class M2ProTrapezoidalProfile: public M2TimedState {
+
+   public:
+    M2ProTrapezoidalProfile(RobotM2P *M2, const char *name = "M2 Pro hand stiffness estimation"):M2TimedState(M2, name){};
+
+    void entryCode(void);
+    void duringCode(void);
+    void exitCode(void);
+
+   private:
+    std::vector<double> startPoint;
+    std::vector<double> endPoint;
+    std::vector<double> maxVel;
+    double dTime;
+
+    VM2 Xi, Xf;
+    static const unsigned int TrajNbPts=2;
+    unsigned int TrajPtIdx=0;
+    double startTime;
+    VM2 TrajPt[TrajNbPts]={VM2(0., 0.), VM2(0., 0.)};
+    double TrajTime[TrajNbPts]={2, 2};
+    double T;
+    float k_i=1.; //Integral gain
+};
+
 #endif

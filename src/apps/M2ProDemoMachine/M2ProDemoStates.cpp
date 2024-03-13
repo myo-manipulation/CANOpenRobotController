@@ -24,6 +24,78 @@ double JerkIt(VM2 X0, VM2 Xf, double T, double t, VM2 &Xd, VM2 &dXd) {
     return tn;
 }
 
+//TrapIt(X0, Xf, T, t, &X, &dX)
+double TrapIt(VM2 X0, VM2 Xf, double T, double t, VM2 &Xd, VM2 &dXd, std::vector<double> maxVel) {
+    double x=0.0, y=0.0;
+    double dx=0.0, dy=0.0;
+    VM2 distance = Xf - X0;
+    double tx, ty;
+
+    tx = calculateTrapezoidalProfile(T, t, distance(0), maxVel[0], x, dx);
+    ty = calculateTrapezoidalProfile(T, t, distance(1), maxVel[1], y, dy);
+
+    Xd =  VM2{x, y};
+    dXd = VM2{dx, dy};
+
+    double tn = std::min(tx, ty);
+    return tn;
+}
+double calculateTrapezoidalProfile(double T, double t, double distance, double maxVel, double &pos, double &vel){
+    double constantVelTime = 2 * distance / maxVel - T;
+
+    if (constantVelTime > 0) {
+        // Trapezoidal profile
+        double accelerationTime = (T - constantVelTime)/2;
+        double decelerationTime = (T - constantVelTime)/2+constantVelTime;
+        double accelerationDistance = 0.5 * (maxVel / accelerationTime) * accelerationTime * accelerationTime;
+        double constantVelocityDistance = maxVel * constantVelTime;
+        double decelerationDistance = decelerationDistance + constantVelocityDistance;
+
+        if (t <= accelerationTime) {
+            // Acceleration phase
+            pos = 0.5 * (maxVel / accelerationTime) * t * t;
+            vel = (maxVel / accelerationTime) * t;
+        } else if (t <= decelerationTime) {
+            // Constant velocity phase
+            pos = accelerationDistance + maxVel * (t - accelerationTime);
+            vel = maxVel;
+        } else if (t <= T) {
+            // Deceleration phase
+            double timeIntoDeceleration = t - (accelerationTime + constantVelTime);
+            pos = accelerationDistance + constantVelocityDistance
+                + maxVel * timeIntoDeceleration - 0.5 * (maxVel / decelerationTime) * timeIntoDeceleration * timeIntoDeceleration;
+            vel = maxVel - (maxVel / decelerationTime) * timeIntoDeceleration;
+        } else {
+            // End position
+            pos = distance;
+            vel = 0;
+        }
+    } else {
+        // Triangular profile
+        double accelerationTime = T / 2;
+        double decelerationTime = T / 2;
+        double accelerationDistance = 0.5 * (maxVel / accelerationTime) * accelerationTime * accelerationTime;
+        double decelerationDistance = accelerationDistance;
+
+        if (t <= accelerationTime) {
+            // Acceleration phase
+            pos = 0.5 * (maxVel / accelerationTime) * t * t;
+            vel = (maxVel / accelerationTime) * t;
+        } else if (t <= T) {
+            // Deceleration phase
+            double timeIntoDeceleration = t - accelerationTime;
+            pos = accelerationDistance + maxVel * timeIntoDeceleration - 0.5 * (maxVel / decelerationTime) * timeIntoDeceleration * timeIntoDeceleration;
+            vel = maxVel - (maxVel / decelerationTime) * timeIntoDeceleration;
+        } else {
+            // End position
+            pos = distance;
+            vel = 0;
+        }
+    }
+    double tn=std::max(std::min(t/T, 1.0), .0);//Normalised time bounded 0-1 
+    return tn;
+}
+
 
 void M2DemoState::entryCode(void) {
     //robot->applyCalibration();
@@ -214,7 +286,7 @@ void M2DemoMinJerkPosition::duringCode(void) {
     VM2 Xd, dXd;
     //Compute current desired interpolated point
     double status=JerkIt(Xi, Xf, T, running()-startTime, Xd, dXd);
-    //Apply position control
+    //Apply velocity control
     robot->setEndEffVelocity(dXd+k_i*(Xd-robot->getEndEffPosition()));
 
     //Have we reached a point?
@@ -337,7 +409,7 @@ void M2ProStiffnessEst::duringCode(void) {
     case 2: //minimum jerk trajectory to apply a displacement
         //Compute current desired interpolated point
         status=JerkIt(Xi, Xf, T, running()-startTime, Xd, dXd);
-        //Apply position control
+        //Apply velocity control
         vel = dXd+k_i*(Xd-robot->getEndEffPosition());
         std::cout << "target velocity=[ " << vel.transpose() << " ]" << std::endl;
         robot->setEndEffVelocity(vel);
@@ -375,6 +447,121 @@ void M2ProStiffnessEst::duringCode(void) {
 
 }
 void M2ProStiffnessEst::exitCode(void) {
+    robot->flag=0;
+}
+
+void M2ProTrapezoidalProfile::entryCode(void) {
+    //generate the displacement trajectory
+    startPoint = robot->startPoint;
+    endPoint = robot->endPoint;
+    maxVel = robot->maxVel;
+    dTime = robot->dTime;
+
+    std::cout << std::setprecision(3) << std::fixed;
+    std::cout << "startP=[ " << startPoint[0] << " " << startPoint[1] << " ]\t";
+    std::cout << "endP=[ " << endPoint[0] << " " << endPoint[1] << " ]\t";
+    std::cout << "maxVel=[ " << maxVel[0] << " " << maxVel[1] << " ]\t";
+    std::cout << "dTime=[ " << dTime << " ]\t";
+    std::cout << std::endl;
+
+    //initialise the robot to torque control mode
+    robot->flag=0;
+    robot->initTorqueControl();
+    //robot->initVelocityControl();
+
+    std::cout << "Please go to the starting position" << std::endl;
+}
+void M2ProTrapezoidalProfile::duringCode(void) {
+    // get current position
+    VM2 currPosition =robot->getEndEffPosition();
+
+    //judge if getting ready at the start position, if arrived, change flag to 1
+    float distance = sqrt(pow(currPosition(0)-startPoint[0],2)+pow(currPosition(1)-startPoint[1],2));
+    if ( distance <= 0.01 && robot->flag==0) {
+        robot->flag=1;
+        std::cout << "start" << std::endl;
+    }
+    
+    //judge if arriving at the start position, if arrived, change to velocity control, change flag to 2
+    if (robot->flag==1) {
+        sleep(5000);
+        robot->flag=2;
+        robot->initVelocityControl();
+        robot->setEndEffVelocity(VM2::Zero());
+
+        Xi=robot->getEndEffPosition();
+        TrajPt[0] = VM2(startPoint[0], startPoint[1]); // Assign values to the elements of TrajPt
+        TrajPt[1] = VM2(endPoint[0], endPoint[1]);
+
+        TrajTime[0] = dTime; // Assign values to the elements of TrajTime
+        TrajTime[1] = dTime;
+
+        //Initialise to first target point
+        TrajPtIdx=0;
+        startTime=running();
+        Xf=TrajPt[TrajPtIdx];
+        T=TrajTime[TrajPtIdx];
+        k_i=1.;
+
+        robot->flag=2;
+        std::cout << "move" << std::endl;
+    }
+    // after completing the initialisation, change flag to 2
+
+    // conduct the experiment protocol
+    VM2 Xd, dXd;
+    VM2 vel;
+    double status;
+
+    switch (robot->flag)
+    {
+    case 0: // transparent mode
+        if(iterations()%100==1) {
+            robot->printStatus();
+        }
+        break;
+    case 1: // transparent mode
+        if(iterations()%100==1) {
+            robot->printStatus();
+        }
+        break;
+    case 2: //minimum jerk trajectory to apply a displacement
+        //Compute current desired interpolated point
+        status=TrapIt(Xi, Xf, T, running()-startTime, Xd, dXd, maxVel);
+        //Apply velocity control
+        vel = dXd+k_i*(Xd-robot->getEndEffPosition());
+        std::cout << "target velocity=[ " << vel.transpose() << " ]" << std::endl;
+        robot->setEndEffVelocity(vel);
+
+        //Have we reached a point?
+        if(status>=1.) {
+            //Go to next point
+            TrajPtIdx++;
+            //Have we reached the end of the trajectory?
+            if(TrajPtIdx>=TrajNbPts){
+                robot->flag=4;
+                robot->initTorqueControl();
+                std::cout << "end" << std::endl;
+            }
+            //From where we are
+            Xi=robot->getEndEffPosition();
+            //To next point
+            Xf=TrajPt[TrajPtIdx];
+            T=TrajTime[TrajPtIdx];
+            startTime=running();
+        }
+        break;
+    case 4: // transparent mode
+        if(iterations()%100==1) {
+            robot->printStatus();
+        }
+        break;
+    default:
+        break;
+    }
+
+}
+void M2ProTrapezoidalProfile::exitCode(void) {
     robot->flag=0;
 }
 
