@@ -242,7 +242,7 @@ class M2ProStiffnessEst: public M2TimedState {
 class M2ProTrapezoidalProfile: public M2TimedState {
 
    public:
-    M2ProTrapezoidalProfile(RobotM2P *M2, const char *name = "M2 Pro hand stiffness estimation"):M2TimedState(M2, name){};
+    M2ProTrapezoidalProfile(RobotM2P *M2, const char *name = "M2 Pro hand trapezoidal profile"):M2TimedState(M2, name){};
 
     void entryCode(void);
     void duringCode(void);
@@ -262,6 +262,8 @@ class M2ProTrapezoidalProfile: public M2TimedState {
     double TrajTime[TrajNbPts]={2, 2};
     double T;
     float k_i=1.; //Integral gain
+
+    double t1, t2;
 };
 
 #endif

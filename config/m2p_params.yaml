@@ -2,4 +2,5 @@ M2Pro:
   startPoint: [0.1, 0.1] # [m]
   endPoint: [0.5, 0.1] # [m]
   displacement: 0.1 # [m]
-  dTime: 1 # [s]
+  maxVel: [0.2, 0.2] # [m/s]
+  dTime: 2 # [s]
